@@ -174,7 +174,7 @@ class Cli(Frontend):
 
     def _rename_and_move_file(self, target: Target):
         tty.msg(
-            f"moving to {target.destination.absolute()}",
+            f"relocate {target.destination.absolute()} by {self.settings.action.value}",
             MessageType.SUCCESS,
         )
         if self.settings.test:

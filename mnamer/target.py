@@ -1,9 +1,12 @@
-from __future__ import annotations
+from __future__ import annotations # 支持类型注解
 
 import datetime as dt
 from os import path
 from pathlib import Path
-from shutil import move
+from shutil import move, copy
+
+from reflink import reflink
+
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from guessit import guessit  # type: ignore
@@ -13,7 +16,7 @@ from mnamer.language import Language
 from mnamer.metadata import Metadata, MetadataEpisode, MetadataMovie
 from mnamer.providers import Provider
 from mnamer.setting_store import SettingStore
-from mnamer.types import MediaType, ProviderType
+from mnamer.types import ActionType, MediaType, ProviderType
 from mnamer.utils import (
     crawl_in,
     filename_replace,
@@ -233,10 +236,16 @@ class Target:
         return response
 
     def relocate(self) -> None:
-        """Performs the action of renaming and/or moving a file."""
+        """Performs the action of moving or coping or reflinking a file."""
+        action = self._settings.action
         destination_path = Path(self.destination).resolve()
         destination_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            move(str(self.source), destination_path)
+            if action == ActionType.MOVE:
+                move(str(self.source), destination_path)
+            elif action == ActionType.COPY:
+                copy(str(self.source), destination_path)
+            else:
+                reflink(str(self.source), str(destination_path))
         except OSError:  # pragma: no cover
             raise MnamerException

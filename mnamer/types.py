@@ -30,3 +30,8 @@ class SettingType(Enum):
     PARAMETER = "parameter"
     POSITIONAL = "positional"
     CONFIGURATION = "configuration"
+
+class ActionType(Enum):
+    MOVE="move"
+    COPY="copy"
+    REFLINK="reflink"

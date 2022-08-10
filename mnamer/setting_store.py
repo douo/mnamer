@@ -8,7 +8,7 @@ from mnamer.const import SUBTITLE_CONTAINERS
 from mnamer.exceptions import MnamerException
 from mnamer.language import Language
 from mnamer.setting_spec import SettingSpec
-from mnamer.types import MediaType, ProviderType, SettingType
+from mnamer.types import MediaType, ProviderType, SettingType, ActionType
 from mnamer.utils import crawl_out, json_loads, normalize_containers
 
 __all__ = ["SettingStore"]
@@ -107,6 +107,16 @@ class SettingStore:
             help="--language=<LANG>: specify the search language",
         ).as_dict(),
     )
+    action: ActionType = dataclasses.field(
+        default=ActionType.MOVE,
+        metadata=SettingSpec(
+            flags=["-a", "--action"],
+            choices=[e.value for e in ActionType],
+            group=SettingType.PARAMETER,
+            help=f"--action={{{','.join([e.value for e in ActionType])}}}: dst file action",
+        ).as_dict(),
+    )
+
     mask: List[str] = dataclasses.field(
         default_factory=lambda: [
             "3g2",
@@ -293,6 +303,7 @@ class SettingStore:
             help="--config-path=<PATH>: specifies configuration path to load",
         ).as_dict(),
     )
+
     id_imdb: Optional[str] = dataclasses.field(
         default=None,
         metadata=SettingSpec(
@@ -398,6 +409,7 @@ class SettingStore:
             "episode_api": ProviderType,
             "episode_directory": self._resolve_path,
             "language": Language.parse,
+            "action": ActionType,
             "mask": normalize_containers,
             "media": MediaType,
             "movie_api": ProviderType,
@@ -448,11 +460,13 @@ class SettingStore:
     def load(self) -> None:
         arg_loader = ArgLoader(*self.specifications())
         try:
+            # --help  在这里退出
             arguments = arg_loader.load()
         except RuntimeError as e:
             raise MnamerException(e)
         config_path = arguments.get("config_path", crawl_out(".mnamer-v2.json"))
         config = json_loads(str(config_path)) if config_path else {}
+        # 命令行优先级比 config file 高
         if not self.config_ignore and not arguments.get("config_ignore"):
             self.bulk_apply(config)
         if arguments:
